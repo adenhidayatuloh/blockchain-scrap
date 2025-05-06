@@ -91,6 +91,7 @@ func (s *coinService) GetCoinDetail(id, contractAddress string, timeSkip time.Du
 		output.MarketData.Liquidity.USD = liquidity[0].Liquidity.USD
 	}
 
+	//filter time stamp in chart
 	var filteredOneHour []dto.PricePoint
 	var lastTime time.Time
 
@@ -107,8 +108,31 @@ func (s *coinService) GetCoinDetail(id, contractAddress string, timeSkip time.Du
 			lastTime = t
 		}
 	}
-
 	output.TimePrices = filteredOneHour
+
+	//Seed data default/////
+
+	liquidityInfo := &dto.DexLiquidityInfo{
+		LiquidityPoolSize: 67.8,
+		TopDex:            "Jupiter",
+		Volume24h:         130.0,
+		SlippageNote:      "Low (<0.5%)",
+		DexLiquidityRatio: 4.6,
+		LiquidityTrend7D:  8.2,
+	}
+
+	tokenAnalytics := &dto.TokenAnalytics{
+		TopHolder:   8.568,
+		TopWallets:  8.568,
+		TokenViewer: 8.568,
+		SniperBot:   1.576,
+		DevSold:     true,
+		DevBuyback:  true,
+	}
+	output.LiquidityInfo = *liquidityInfo
+	output.TokenAnalytics = *tokenAnalytics
+
+	///////////////////
 	return output, nil
 }
 
