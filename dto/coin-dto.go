@@ -3,8 +3,9 @@ package dto
 type ContractAddressResponse struct {
 	ID             string           `json:"id"`
 	Symbol         string           `json:"symbol"`
-	Platform       string           `json:"contract_address"` // disesuaikan json tag
+	Platform       string           `json:"contract_address"`
 	WebSlug        string           `json:"web_slug"`
+	ListingDay     int              `json:"listing_day"`
 	MarketData     MarketData       `json:"market_data"`
 	TimePrices     []PricePoint     `json:"timestamp_prices"`
 	LiquidityInfo  DexLiquidityInfo `json:"dex_liquidity_info"`

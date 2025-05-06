@@ -131,6 +131,7 @@ func (s *coinService) GetCoinDetail(id, contractAddress string, timeSkip time.Du
 	}
 	output.LiquidityInfo = *liquidityInfo
 	output.TokenAnalytics = *tokenAnalytics
+	output.ListingDay = 575
 
 	///////////////////
 	return output, nil
