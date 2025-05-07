@@ -2,7 +2,6 @@ package main
 
 import (
 	"blockchain-scrap/handler"
-	"blockchain-scrap/infra"
 	"blockchain-scrap/service"
 
 	"github.com/gin-gonic/gin"
@@ -10,10 +9,10 @@ import (
 
 func main() {
 
-	db := infra.GetDBInstance()
-	if err := infra.AutoMigrate(db); err != nil {
-		return
-	}
+	// db := infra.GetDBInstance()
+	// if err := infra.AutoMigrate(db); err != nil {
+	// 	return
+	// }
 
 	r := gin.Default()
 

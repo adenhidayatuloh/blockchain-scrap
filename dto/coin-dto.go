@@ -10,6 +10,7 @@ type ContractAddressResponse struct {
 	TimePrices     []PricePoint     `json:"timestamp_prices"`
 	LiquidityInfo  DexLiquidityInfo `json:"dex_liquidity_info"`
 	TokenAnalytics TokenAnalytics   `json:"token_analytics"`
+	Image          Image            `json:"image"`
 }
 
 type MarketData struct {
@@ -59,4 +60,8 @@ type GetPricesRequest struct {
 
 type GetLiquidityRequest struct {
 	Liquidity CurrencyValue `json:"liquidity"`
+}
+
+type Image struct {
+	Small string `json:"small"`
 }
