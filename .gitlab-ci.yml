@@ -1,0 +1,30 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  BASE_PATH: "/home/forge/ci-script/blockchain-scrap"
+  PATH_BUILD_DIR: "$BASE_PATH/build/"
+
+build:
+  stage: build
+  before_script:
+    - export PATH=$PATH:/snap/bin
+  script:
+    - go build -o "$PATH_BUILD_DIR/app" main.go
+  only:
+    - staging
+    - main
+
+deploy:
+  stage: deploy
+  script:
+    - export PATH=$PATH:/usr/bin:/usr/sbin:/usr/local/bin
+    - "$PATH_DEPLOY_SCRIPT"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      variables:
+        PATH_DEPLOY_SCRIPT: "$BASE_PATH/deploy-prod.sh"
+    - if: '$CI_COMMIT_BRANCH == "staging"'
+      variables:
+        PATH_DEPLOY_SCRIPT: "$BASE_PATH/deploy.sh"

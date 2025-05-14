@@ -1,16 +1,19 @@
 package dto
 
+import "github.com/google/uuid"
+
 type ContractAddressResponse struct {
-	ID             string           `json:"id"`
-	Symbol         string           `json:"symbol"`
-	Platform       string           `json:"contract_address"`
-	WebSlug        string           `json:"web_slug"`
-	ListingDay     int              `json:"listing_day"`
-	MarketData     MarketData       `json:"market_data"`
-	TimePrices     []PricePoint     `json:"timestamp_prices"`
-	LiquidityInfo  DexLiquidityInfo `json:"dex_liquidity_info"`
-	TokenAnalytics TokenAnalytics   `json:"token_analytics"`
-	Image          Image            `json:"image"`
+	ID              string           `json:"id"`
+	Symbol          string           `json:"symbol"`
+	Platform        string           `json:"contract_address"`
+	WebSlug         string           `json:"web_slug"`
+	ListingDay      int              `json:"listing_day"`
+	MarketData      MarketData       `json:"market_data"`
+	TimePrices      []PricePoint     `json:"timestamp_prices"`
+	LiquidityInfo   DexLiquidityInfo `json:"dex_liquidity_info"`
+	TokenAnalytics  TokenAnalytics   `json:"token_analytics"`
+	Image           Image            `json:"image"`
+	SummaryAnalysis string           `json:"summary_analysis"`
 }
 
 type MarketData struct {
@@ -64,4 +67,18 @@ type GetLiquidityRequest struct {
 
 type Image struct {
 	Small string `json:"small"`
+}
+
+type AIRequest struct {
+	Prompt      string                  `json:"prompt"`
+	Collections ContractAddressResponse `json:"collections"`
+}
+
+type AIResponse struct {
+	AssistantMessage string `json:"assistant_message"`
+}
+
+type SearchRecordResponse struct {
+	ID              uuid.UUID `json:"id"`
+	ContractAddress string    `json:"contract_address"`
 }

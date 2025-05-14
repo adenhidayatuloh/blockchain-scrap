@@ -13,7 +13,7 @@ import (
 )
 
 func AutoMigrate(db *gorm.DB) error {
-	return db.AutoMigrate(&entity.CoinDetail{})
+	return db.AutoMigrate(&entity.User{}, &entity.BlockchainSearch{}, &entity.Token{})
 }
 
 var (
