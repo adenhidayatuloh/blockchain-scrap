@@ -11,57 +11,18 @@ import (
 )
 
 // func ProcessRequest(url string) ([]byte, errs.MessageErr) {
-// 	req, err := http.NewRequest("GET", url, nil)
+// 	body, err := ProcessJSONRequest("GET", url, nil, nil)
 // 	if err != nil {
-// 		return nil, errs.NewInternalServerError(err.Error())
+// 		return nil, err
 // 	}
-// 	req.Header.Add("accept", "application/json")
-
-// 	res, err := http.DefaultClient.Do(req)
-// 	if err != nil {
-// 		return nil, errs.NewInternalServerError(err.Error())
-// 	}
-// 	defer res.Body.Close()
-
-// 	body, err := io.ReadAll(res.Body)
-// 	if err != nil {
-// 		return nil, errs.NewInternalServerError(err.Error())
-// 	}
-
-// 	if res.StatusCode != http.StatusOK {
-// 		return nil, errs.NewInternalServerError(string(body))
-// 	}
-
 // 	return body, nil
 // }
 
 // func ProcessPostRequest(url string, req []byte) ([]byte, errs.MessageErr) {
-// 	apiKey := os.Getenv("API_KEY")
-
-// 	reqBody := bytes.NewBuffer(req)
-// 	requestHTTP, err := http.NewRequest("POST", url, reqBody)
+// 	body, err := ProcessJSONRequest("POST", url, req, nil)
 // 	if err != nil {
-// 		return nil, errs.NewInternalServerError(err.Error())
+// 		return nil, err
 // 	}
-
-// 	requestHTTP.Header.Add("accept", "application/json")
-// 	requestHTTP.Header.Add("ATHENOR-API-KEY", apiKey)
-
-// 	res, err := http.DefaultClient.Do(requestHTTP)
-// 	if err != nil {
-// 		return nil, errs.NewInternalServerError(err.Error())
-// 	}
-// 	defer res.Body.Close()
-
-// 	body, err := io.ReadAll(res.Body)
-// 	if err != nil {
-// 		return nil, errs.NewInternalServerError(err.Error())
-// 	}
-
-// 	if res.StatusCode != http.StatusOK {
-// 		return nil, errs.NewInternalServerError(string(body))
-// 	}
-
 // 	return body, nil
 // }
 
@@ -103,7 +64,7 @@ func ProcessJSONRequest(method, url string, payload []byte, headers map[string]s
 	}
 
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return nil, errs.NewInternalServerError(fmt.Sprintf("unexpected status code %d: %s", res.StatusCode, string(body)))
+		return body, errs.NewInternalServerError(fmt.Sprintf("unexpected status code %d: %s", res.StatusCode, string(body)))
 	}
 
 	return body, nil

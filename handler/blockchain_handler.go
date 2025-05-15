@@ -51,13 +51,11 @@ func (h *BlockchainHandler) GetBlockchainDetailByContractAddress(c *gin.Context)
 		return
 	}
 
-	result, err := h.blockchainSvc.GetBlockchainDetailByContractAddress(c.Request.Context(), contractAddress, timeSkip)
-	if err != nil {
-		if messageErr, ok := err.(errs.MessageErr); ok {
-			c.JSON(messageErr.StatusCode(), gin.H{"error": messageErr.Message()})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error occurred"})
-		}
+	result, errService := h.blockchainSvc.GetBlockchainDetailByContractAddress(c.Request.Context(), contractAddress, timeSkip)
+	if errService != nil {
+
+		c.JSON(errService.StatusCode(), gin.H{"error": errService.Message()})
+
 		return
 	}
 	c.JSON(http.StatusOK, result)

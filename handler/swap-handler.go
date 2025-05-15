@@ -36,7 +36,7 @@ func (h *SwapHandler) Swap(c *gin.Context) {
 
 	transaction, err := h.Service.GetSwapTransaction(req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(err.StatusCode(), gin.H{"error": err.Message()})
 		return
 	}
 
@@ -90,7 +90,7 @@ func (h *SwapHandler) Submit(c *gin.Context) {
 
 	signature, err := h.Service.SubmitTransaction(req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(err.StatusCode(), gin.H{"error": err.Message()})
 		return
 	}
 

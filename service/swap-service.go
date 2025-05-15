@@ -6,14 +6,10 @@ import (
 	"blockchain-scrap/pkg/errs"
 	httprequest "blockchain-scrap/pkg/http-request"
 	"blockchain-scrap/repository"
-	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"math"
-	"net/http"
 	"strconv"
 	"time"
 
@@ -22,8 +18,8 @@ import (
 )
 
 type SwapService interface {
-	GetSwapTransaction(req dto.SwapRequest) (string, error)
-	SubmitTransaction(req dto.SubmitRequest) (string, error)
+	GetSwapTransaction(req dto.SwapRequest) (string, errs.MessageErr)
+	SubmitTransaction(req dto.SubmitRequest) (string, errs.MessageErr)
 	GetCurrencySwap(req dto.SwapRequest) (*dto.GetCurrencySwapResponse, errs.MessageErr)
 }
 
@@ -36,7 +32,7 @@ func NewSwapService(tokenRepo repository.TokenRepository, tokenService TokenServ
 	return &swapServiceImpl{tokenRepo: tokenRepo, tokenService: tokenService}
 }
 
-func (s *swapServiceImpl) GetSwapTransaction(req dto.SwapRequest) (string, error) {
+func (s *swapServiceImpl) GetSwapTransaction(req dto.SwapRequest) (string, errs.MessageErr) {
 
 	var (
 		decimalAmount int64
@@ -44,10 +40,8 @@ func (s *swapServiceImpl) GetSwapTransaction(req dto.SwapRequest) (string, error
 
 	tokenMetadatas, errRepo := s.tokenRepo.FindByAddress([]string{req.InputMint, req.OutputMint})
 	if errRepo != nil {
-		return "", errors.New(errRepo.Error())
+		return "", errRepo
 	}
-
-	fmt.Println(tokenMetadatas[0].Address)
 
 	tokenMap := make(map[string]*entity.Token)
 	for _, t := range tokenMetadatas {
@@ -56,18 +50,18 @@ func (s *swapServiceImpl) GetSwapTransaction(req dto.SwapRequest) (string, error
 
 	inputTokenMeta, ok := tokenMap[req.InputMint]
 	if !ok {
-		return "", errors.New("token sell not supported")
+		return "", errs.NewBadRequest("token sell not supported")
 	}
 
 	_, ok = tokenMap[req.OutputMint]
 	if !ok {
-		return "", errors.New("token buy not supported")
+		return "", errs.NewBadRequest("token buy not supported")
 	}
 
 	if inputTokenMeta.Decimals > 0 {
-		decimalAmount = req.Amount * int64(math.Pow10(int(inputTokenMeta.Decimals)))
+		decimalAmount = int64(req.Amount * math.Pow10(int(inputTokenMeta.Decimals)))
 	} else {
-		decimalAmount = req.Amount
+		decimalAmount = int64(req.Amount)
 	}
 
 	quoteURL := fmt.Sprintf(
@@ -75,30 +69,18 @@ func (s *swapServiceImpl) GetSwapTransaction(req dto.SwapRequest) (string, error
 		req.InputMint, req.OutputMint, decimalAmount,
 	)
 
-	resp, err := http.Get(quoteURL)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		errQuote := &dto.JupiterErrorResponse{}
-
-		if err := json.Unmarshal(body, errQuote); err != nil {
-			return "", err
+	body, errRequest := httprequest.ProcessJSONRequest("GET", quoteURL, nil, nil)
+	if errRequest != nil {
+		var jupError dto.JupiterErrorResponse
+		if unmarshalErr := json.Unmarshal(body, &jupError); unmarshalErr == nil && jupError.Error != "" {
+			return "", errs.NewBadRequest(fmt.Sprintf("Jupiter API error: %s (Code: %s)", jupError.Error, jupError.ErrorCode))
 		}
-
-		return "", errors.New(errQuote.Error)
+		return "", errs.NewInternalServerError(fmt.Sprintf("Failed quote from Jupiter API: %s", errRequest.Message()))
 	}
 
 	var quoteResponse map[string]interface{}
 	if err := json.Unmarshal(body, &quoteResponse); err != nil {
-		return "", err
+		return "", errs.NewInternalServerError(fmt.Sprintf("failed unmarshal respons quote Jupiter: %v", err))
 	}
 
 	swapPayload := map[string]interface{}{
@@ -109,28 +91,26 @@ func (s *swapServiceImpl) GetSwapTransaction(req dto.SwapRequest) (string, error
 
 	swapPayloadBytes, err := json.Marshal(swapPayload)
 	if err != nil {
-		return "", err
+		return "", errs.NewInternalServerError(fmt.Sprintf("failed marshal swap payload: %v", err))
 	}
 
-	swapResp, err := http.Post("https://quote-api.jup.ag/v6/swap", "application/json", bytes.NewBuffer(swapPayloadBytes))
-	if err != nil {
-		return "", err
-	}
-	defer swapResp.Body.Close()
-
-	swapBody, err := io.ReadAll(swapResp.Body)
-	if err != nil {
-		return "", err
+	swapBody, errRequest := httprequest.ProcessJSONRequest("POST", "https://quote-api.jup.ag/v6/swap", swapPayloadBytes, nil)
+	if errRequest != nil {
+		var jupError dto.JupiterErrorResponse
+		if unmarshalErr := json.Unmarshal(swapBody, &jupError); unmarshalErr == nil && jupError.Error != "" {
+			return "", errs.NewBadRequest(fmt.Sprintf("Jupiter API error: %s (Code: %s)", jupError.Error, jupError.ErrorCode))
+		}
+		return "", errs.NewInternalServerError(fmt.Sprintf("Failed swap from Jupiter API: %s", errRequest.Message()))
 	}
 
 	var swapResponse map[string]interface{}
 	if err := json.Unmarshal(swapBody, &swapResponse); err != nil {
-		return "", err
+		return "", errs.NewInternalServerError(fmt.Sprintf("failed unmarshal respons swap Jupiter: %v", err))
 	}
 
 	transaction, ok := swapResponse["swapTransaction"].(string)
 	if !ok {
-		return "", fmt.Errorf("invalid swapTransaction format")
+		return "", errs.NewInternalServerError("invalid swapTransaction format")
 	}
 
 	return transaction, nil
@@ -176,9 +156,9 @@ func (s *swapServiceImpl) GetCurrencySwap(req dto.SwapRequest) (*dto.GetCurrency
 	}
 
 	if inputTokenMeta.Decimals > 0 {
-		decimalAmount = req.Amount * int64(math.Pow10(int(inputTokenMeta.Decimals)))
+		decimalAmount = int64(req.Amount * math.Pow10(int(inputTokenMeta.Decimals)))
 	} else {
-		decimalAmount = req.Amount
+		decimalAmount = int64(req.Amount)
 	}
 
 	quoteURL := fmt.Sprintf(
@@ -254,15 +234,19 @@ func (s *swapServiceImpl) GetCurrencySwap(req dto.SwapRequest) (*dto.GetCurrency
 		getCurrencyResponse.IsSwappable = false
 	}
 
+	if getCurrencyResponse.BalanceInAmount < getCurrencyResponse.InAmount {
+		getCurrencyResponse.IsSwappable = false
+	}
+
 	return &getCurrencyResponse, nil
 }
 
-func (s *swapServiceImpl) SubmitTransaction(req dto.SubmitRequest) (string, error) {
+func (s *swapServiceImpl) SubmitTransaction(req dto.SubmitRequest) (string, errs.MessageErr) {
 	client := rpc.New("https://api.mainnet-beta.solana.com")
 
 	tx, err := solana.TransactionFromBase64(req.SignedTransaction)
 	if err != nil {
-		return "", err
+		return "", errs.NewInternalServerError(fmt.Sprintf("failed to decode transaction: %v", err))
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -277,7 +261,7 @@ func (s *swapServiceImpl) SubmitTransaction(req dto.SubmitRequest) (string, erro
 		},
 	)
 	if err != nil {
-		return "", err
+		return "", errs.NewInternalServerError(fmt.Sprintf("failed to send transaction: %v", err))
 	}
 
 	return sig.String(), nil

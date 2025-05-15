@@ -1,10 +1,10 @@
 package dto
 
 type SwapRequest struct {
-	PublicKey  string `json:"publicKey" binding:"required"`
-	InputMint  string `json:"inputMint" binding:"required"`
-	OutputMint string `json:"outputMint" binding:"required"`
-	Amount     int64  `json:"amount" binding:"required"`
+	PublicKey  string  `json:"publicKey" binding:"required"`
+	InputMint  string  `json:"inputMint" binding:"required"`
+	OutputMint string  `json:"outputMint" binding:"required"`
+	Amount     float64 `json:"amount" binding:"required"`
 }
 
 type SwapResponse struct {

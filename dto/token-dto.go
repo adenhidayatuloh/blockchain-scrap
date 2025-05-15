@@ -42,6 +42,16 @@ type TokenAccountsApiResponse struct {
 	ID      string              `json:"id"`
 }
 
+type TokenAccountsSolanaNativeApiResponse struct {
+	JSONRPC string                          `json:"jsonrpc"`
+	Result  TokenAccountsSolanaNativeResult `json:"result"`
+	ID      string                          `json:"id"`
+}
+
+type TokenAccountsSolanaNativeResult struct {
+	Value float64 `json:"value"`
+}
+
 type TokenAccountsResult struct {
 	Context TokenContext `json:"context"`
 	Value   []TokenData  `json:"value"`

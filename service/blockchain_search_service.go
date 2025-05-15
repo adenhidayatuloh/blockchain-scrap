@@ -26,10 +26,11 @@ type BlockchainService interface {
 
 type blockchainService struct {
 	searchRepo repository.BlockchainSearchRepository
+	tokenRepo  repository.TokenRepository
 }
 
-func NewBlockchainService(searchRepo repository.BlockchainSearchRepository) BlockchainService {
-	return &blockchainService{searchRepo: searchRepo}
+func NewBlockchainService(searchRepo repository.BlockchainSearchRepository, tokenRepo repository.TokenRepository) BlockchainService {
+	return &blockchainService{searchRepo: searchRepo, tokenRepo: tokenRepo}
 }
 
 // FindByID implements BlockchainService.
@@ -226,18 +227,26 @@ func (s *blockchainService) GetBlockchainDetailByContractAddress(ctx context.Con
 		aiResp        []byte
 	)
 
-	url := "https://api.coingecko.com/api/v3/coins/id/contract/" + contractAddress
-	body, err := httprequest.ProcessJSONRequest("GET", url, nil, nil)
+	token, err := s.tokenRepo.FindByAddress([]string{contractAddress})
+
 	if err != nil {
-		return nil, errs.NewInternalServerError(err.Message())
+		return nil, err
 	}
+
+	if len(token) == 0 {
+		return nil, errs.NewNotFound("Contract address not found, please change different contract address")
+	}
+
+	url := "https://api.coingecko.com/api/v3/coins/id/contract/" + contractAddress
+	body, _ := httprequest.ProcessJSONRequest("GET", url, nil, nil)
+
 	contractResp = body
 	response.Platform = contractAddress
 	if err := json.Unmarshal(contractResp, response); err != nil {
 		return nil, errs.NewInternalServerError("Failed to process contract data")
 	}
 	if response.Symbol == "" {
-		return nil, errs.NewNotFound("Contract address not found")
+		return nil, errs.NewNotFound("Contract address not found, please change different contract address")
 	}
 
 	wg.Add(2)
@@ -304,7 +313,7 @@ func (s *blockchainService) GetBlockchainDetailByContractAddress(ctx context.Con
 	response.TimePrices = filteredPrices
 
 	if len(response.TimePrices) == 0 {
-		return nil, errs.NewNotFound("Token ID not found")
+		return nil, errs.NewNotFound("Contract address not found, please change different contract address")
 	}
 
 	// Default seed data
@@ -330,7 +339,7 @@ func (s *blockchainService) GetBlockchainDetailByContractAddress(ctx context.Con
 	response.ListingDay = 575
 
 	aiReq := &dto.AIRequest{
-		Prompt:      "Analyze the following crypto data and summarize it in English. Also give suggestions on what the potential of this crypto is. All currency data is also in USD. Summarize only the important data. If there is any empty or meaningless data, just ignore it, it does not need to be in the output.",
+		Prompt:      "Analyze the following crypto data and summarize it in English. Also provide suggestions on the potential of this crypto. All currency data is also in USD. Summarize only the important data. If there is empty or meaningless data, ignore it, because it does not need to be included in the output. Go straight to the core of the analysis, suggestions and recommendations, a maximum of 1 paragraph that already covers the most important.",
 		Collections: *response,
 	}
 

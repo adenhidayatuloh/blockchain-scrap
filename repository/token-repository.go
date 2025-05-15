@@ -3,7 +3,6 @@ package repository
 import (
 	"blockchain-scrap/entity"
 	"blockchain-scrap/pkg/errs"
-	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -29,12 +28,10 @@ func (r *tokenRepository) FindByAddress(addresses []string) ([]*entity.Token, er
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, errs.NewNotFound("Token not found")
+			return nil, errs.NewNotFound("Token in that contract address not found, please change different contract address")
 		}
 		return nil, errs.NewInternalServerError(err.Error())
 	}
-
-	fmt.Println(record)
 
 	return record, nil
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+
 	"github.com/joho/godotenv"
 )
 
@@ -20,6 +21,11 @@ func main() {
 	if err := infra.AutoMigrate(db); err != nil {
 		return
 	}
+
+	// err := db.AutoMigrate(&entity.Token{})
+	// if err != nil {
+	// 	log.Fatal("Migration failed:", err)
+	// }
 
 	// Initialize router
 	router := gin.Default()
@@ -47,7 +53,7 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 
 	// Initialize services
-	blockchainService := service.NewBlockchainService(blockchainSearchRepo)
+	blockchainService := service.NewBlockchainService(blockchainSearchRepo, tokenRepo)
 	tokenService := service.NewTokenService(tokenRepo)
 	userService := service.NewUserService(userRepo)
 	swapService := service.NewSwapService(tokenRepo, tokenService)
@@ -110,5 +116,5 @@ func main() {
 		}
 	}
 
-	router.Run(":" + apiPort)
+	router.Run(apiPort)
 }
